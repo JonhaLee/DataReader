@@ -35,6 +35,11 @@ namespace DataReader
         }
     }
 
+    
+    /// <summary>
+    /// 출처
+    /// http://www.emgu.com/wiki/index.php/WPF_in_CSharp
+    /// </summary>
     public static class BitmapSourceConvert
     {
         [DllImport("gdi32")]
