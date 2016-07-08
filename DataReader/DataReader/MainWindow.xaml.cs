@@ -27,12 +27,38 @@ namespace DataReader
     public partial class MainWindow : Window
     {
         String filepath = "C:\\Users\\Jonha\\Desktop\\Data\\";
+
+
         public MainWindow()
         {
             InitializeComponent();
-            Image<Bgr, Byte> img1 = new Image<Bgr, Byte>(filepath + "Color\\KinectScreenshot_RGB0.bmp");
-            Color.Source = BitmapSourceConvert.ToBitmapSource(img1); 
+            InitializeData();
+            //Image<Bgr, Byte> img1 = new Image<Bgr, Byte>(filepath + "Color\\KinectScreenshot_RGB0.bmp");
+            //Color.Source = BitmapSourceConvert.ToBitmapSource(img1); 
         }
+        private void InitializeData()
+        {
+
+        }
+        private void FrameController_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            uint img_number = (byte)FrameController.Value;
+            string img_number_path = filepath + "Color\\KinectScreenshot_RGB" + img_number.ToString() + ".bmp";
+            Image<Bgr, Byte> img1 = new Image<Bgr, Byte>(img_number_path);
+            //Color.Source = BitmapSourceConvert.ToBitmapSource(img1); 
+        }
+        private void FrameInput_Click(object sender, RoutedEventArgs e)
+        {
+            uint frameCount = uint.Parse(FrameInputField.Text);
+
+            for (int frameIndex = 0; frameIndex < frameCount; frameIndex++)
+            {
+                string img_number_path = filepath + "Color\\KinectScreenshot_RGB" + frameIndex.ToString() + ".bmp";
+            }
+
+                this.Title = "Clicked";
+        }
+
     }
 
     
