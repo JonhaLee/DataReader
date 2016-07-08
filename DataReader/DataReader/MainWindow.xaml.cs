@@ -17,6 +17,7 @@ using Emgu.CV;
 using Emgu.CV.Structure;
 using Emgu.CV.CvEnum;
 //using Emgu.Util;
+using System.Runtime.InteropServices;
 
 namespace DataReader
 {
@@ -25,27 +26,35 @@ namespace DataReader
     /// </summary>
     public partial class MainWindow : Window
     {
+        String filepath = "C:\\Users\\Jonha\\Desktop\\Data\\";
         public MainWindow()
         {
             InitializeComponent();
-            
-            String win1 = "Test Window";
-            CvInvoke.NamedWindow(win1);
-            Mat img = new Mat(200, 400, DepthType.Cv8U, 3);
-            img.SetTo(new Bgr(255, 0, 0).MCvScalar);
+            Image<Bgr, Byte> img1 = new Image<Bgr, Byte>(filepath + "Color\\KinectScreenshot_RGB0.bmp");
+            Color.Source = BitmapSourceConvert.ToBitmapSource(img1); 
+        }
+    }
 
-            CvInvoke.PutText(
-                img,
-                "Hello",
-                new System.Drawing.Point(10, 80),
-                FontFace.HersheyComplex,
-                1.0,
-                new Bgr(0, 255, 0).MCvScalar);
+    public static class BitmapSourceConvert
+    {
+        [DllImport("gdi32")]
+        private static extern int DeleteObject(IntPtr o);
 
-            CvInvoke.Imshow(win1, img);
-            CvInvoke.WaitKey(0);
-            CvInvoke.DestroyWindow(win1);
+        public static BitmapSource ToBitmapSource(IImage image)
+        {
+            using (System.Drawing.Bitmap source = image.Bitmap)
+            {
+                IntPtr ptr = source.GetHbitmap();
 
+                BitmapSource bs = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(
+                    ptr,
+                    IntPtr.Zero,
+                    Int32Rect.Empty,
+                    System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
+
+                DeleteObject(ptr);
+                return bs;
+            }
         }
     }
 }
