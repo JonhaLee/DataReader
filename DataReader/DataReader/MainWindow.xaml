@@ -3,6 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="MainWindow" Height="700" Width="1000">
     <Grid>
-        <Image Name="Color" Height="350" Width="525" Margin="10,10,457,309"/>
+        <Image Name="Color" Margin="10,10,639,418"/>
+        <StackPanel Height="30" Width="300" Margin="28,256,664,383">
+            <Slider Name="FrameController" Maximum="90" TickPlacement="BottomRight" TickFrequency="5" />
+        </StackPanel>
     </Grid>
 </Window>
