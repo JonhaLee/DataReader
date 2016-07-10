@@ -19,6 +19,8 @@ using Emgu.CV.CvEnum;
 //using Emgu.Util;
 using System.Runtime.InteropServices;
 
+using System.IO;
+
 namespace DataReader
 {
     /// <summary>
@@ -27,38 +29,78 @@ namespace DataReader
     public partial class MainWindow : Window
     {
         String filepath = "C:\\Users\\Jonha\\Desktop\\Data\\";
-
+        uint frameCount = 100;
+        
+        List<ImageSource> images;
 
         public MainWindow()
         {
             InitializeComponent();
-            InitializeData();
-            //Image<Bgr, Byte> img1 = new Image<Bgr, Byte>(filepath + "Color\\KinectScreenshot_RGB0.bmp");
-            //Color.Source = BitmapSourceConvert.ToBitmapSource(img1); 
+            InitializeData();          
         }
         private void InitializeData()
         {
+            FrameController.Maximum = frameCount - 1;
+        }
+        private void ShowColorImage(int img_number)
+        {
+            string img_number_path = filepath + "Color\\KinectScreenshot_RGB" + img_number.ToString() + ".bmp";
+            Image<Bgr, Byte> img = LoadImage(img_number_path);
+            ColorImage.Source = BitmapSourceConvert.ToBitmapSource(img);     
+        }
+        private void ShowInfraredImage(int img_number)
+        {
+            string img_number_path = filepath + "Infrared\\KinectScreenshot_IR" + img_number.ToString() + ".bmp";
+            Image<Bgr, Byte> img = LoadImage(img_number_path);
+            InfraredImage.Source = BitmapSourceConvert.ToBitmapSource(img); 
+        }
+        private void ShowDepthImage(int img_number)
+        {
+            string file_number_path = filepath + "Depth\\Filedepth_" + img_number.ToString() + ".bin";
 
+            Console.Text = " ";
+            using (BinaryReader b = new BinaryReader(File.Open(file_number_path, FileMode.Open)))
+            {
+                int pos = 0;
+                int length = (int)b.BaseStream.Length;
+
+                byte[] depthPixelData = new byte[512 * 424];
+
+
+                //binary파일이 하나의 픽셀 대응점마다 1byte가 아니라 2byte씩 할당함
+                //따라서 이 파일을 읽어올 때에 1byte씩 읽지 말고 2byte씩 읽어야 제대로 된 값을 읽어 올 수 있음
+                   
+                int index = 0;
+                while (pos < length)
+                {
+                    depthPixelData[index++] = (byte)b.ReadInt16();               
+                    
+                    pos += 2 * sizeof(byte);
+                }
+              
+                Image<Gray, Byte> img = new Image<Gray, Byte>(512, 424);
+                img.Bytes = depthPixelData;
+                DepthImage.Source = BitmapSourceConvert.ToBitmapSource(img);
+            }            
+        }
+        private Image<Bgr, Byte> LoadImage(String path)
+        {            
+            Image<Bgr, Byte> img = new Image<Bgr, Byte>(path);
+            return img;
         }
         private void FrameController_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            uint img_number = (byte)FrameController.Value;
-            string img_number_path = filepath + "Color\\KinectScreenshot_RGB" + img_number.ToString() + ".bmp";
-            Image<Bgr, Byte> img1 = new Image<Bgr, Byte>(img_number_path);
-            //Color.Source = BitmapSourceConvert.ToBitmapSource(img1); 
+            int img_number = (byte)FrameController.Value;
+            ShowColorImage(img_number);
+            ShowInfraredImage(img_number);
+            ShowDepthImage(img_number);
+                   
         }
         private void FrameInput_Click(object sender, RoutedEventArgs e)
         {
-            uint frameCount = uint.Parse(FrameInputField.Text);
-
-            for (int frameIndex = 0; frameIndex < frameCount; frameIndex++)
-            {
-                string img_number_path = filepath + "Color\\KinectScreenshot_RGB" + frameIndex.ToString() + ".bmp";
-            }
-
-                this.Title = "Clicked";
+            frameCount = uint.Parse(FrameInputField.Text);
+            FrameController.Maximum = frameCount - 1;
         }
-
     }
 
     
