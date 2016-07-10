@@ -23,6 +23,14 @@ using System.IO;
 
 namespace DataReader
 {
+    struct bodyInfo_Structure
+    {
+        public float x;
+        public float y;
+        public float z;
+        public int state;
+        public int PlayerIndex;
+    }
     /// <summary>
     /// MainWindow.xaml에 대한 상호 작용 논리
     /// </summary>
@@ -30,9 +38,7 @@ namespace DataReader
     {
         String filepath = "C:\\Users\\Jonha\\Desktop\\Data\\";
         uint frameCount = 100;
-        
-        List<ImageSource> images;
-
+            
         public MainWindow()
         {
             InitializeComponent();
@@ -41,6 +47,8 @@ namespace DataReader
         private void InitializeData()
         {
             FrameController.Maximum = frameCount - 1;
+                   
+
         }
         private void ShowColorImage(int img_number)
         {
@@ -58,7 +66,6 @@ namespace DataReader
         {
             string file_number_path = filepath + "Depth\\Filedepth_" + img_number.ToString() + ".bin";
 
-            Console.Text = " ";
             using (BinaryReader b = new BinaryReader(File.Open(file_number_path, FileMode.Open)))
             {
                 int pos = 0;
@@ -83,6 +90,91 @@ namespace DataReader
                 DepthImage.Source = BitmapSourceConvert.ToBitmapSource(img);
             }            
         }
+        private void ShowBodyOnDepthImage(int img_number)
+        {
+            string depthfile_number_path = filepath + "Depth\\Filedepth_" + img_number.ToString() + ".bin";
+            string bodyfile_path = filepath + "Body\\Fileskeleton.bin";
+                      
+            Console.Text = " ";
+
+            using (BinaryReader b = new BinaryReader(File.Open(depthfile_number_path, FileMode.Open)))
+            {
+                int pos = 0;
+                int length = (int)b.BaseStream.Length;
+
+                byte[] depthPixelData = new byte[512 * 424];
+
+
+                //binary파일이 하나의 픽셀 대응점마다 1byte가 아니라 2byte씩 할당함
+                //따라서 이 파일을 읽어올 때에 1byte씩 읽지 말고 2byte씩 읽어야 제대로 된 값을 읽어 올 수 있음
+
+                int index = 0;
+                while (pos < length)
+                {
+                    depthPixelData[index++] = (byte)b.ReadInt16();
+
+                    pos += 2 * sizeof(byte);
+                }
+
+
+                //뎁스 이미지 위에 스켈레톤 정보 그리는 부분
+                List<bodyInfo_Structure> body = new List<bodyInfo_Structure>();
+                byte[] bodyInfo = File.ReadAllBytes(bodyfile_path);
+
+                int rowSize = sizeof(float) + sizeof(float) + sizeof(float) + sizeof(int) + sizeof(int);
+                int playerSize = rowSize * 25;
+                int startPoint = img_number * 6 * playerSize;
+
+                for (int playerIndex = 0; playerIndex < 6; playerIndex++)
+                {
+                    int offset = startPoint + (playerIndex * playerSize);
+                    int check = BitConverter.ToInt16(bodyInfo, offset + 12);
+                    if (check != 9999)
+                    {
+                        //한 사람마다 25개의 joint가 있으므로
+                        for (int jointIndex = 0; jointIndex < 25; jointIndex++)
+                        {
+                            float x = BitConverter.ToSingle(bodyInfo, offset + 0);
+                            float y = BitConverter.ToSingle(bodyInfo, offset + 4);
+                            float z = BitConverter.ToSingle(bodyInfo, offset + 8);
+                            int state = BitConverter.ToInt32(bodyInfo, offset + 12);
+                            //int index = BitConverter.ToInt32(bodyInfo, offset + 16);
+                            //Console.Text = x.ToString() + "  " + y.ToString() + "  " + z.ToString() + "  " + state.ToString() + "  " + index.ToString();
+
+                            if (state == 2)
+                            {
+                                int posX = (int)(x + 0.5f);
+                                int posY = (int)(y + 0.5f);
+
+                                for (int off_y = -3; off_y <= 3; off_y++)
+                                {
+                                    for (int off_x = -3; off_x <= 3; off_x++)
+                                    {
+                                        if((off_x + posX >= 0 && off_x + posX < 512) &&
+                                            (off_y + posY >= 0 && off_y + posY < 512)){
+
+                                                depthPixelData[(off_y + posY) * 512 + (off_x + posX)] = 0;
+                                            }
+                                       
+                                    }
+                                }
+                                    
+                            }
+                            offset += rowSize;
+                        }
+                    }
+                }    
+
+
+                Image<Gray, Byte> img = new Image<Gray, Byte>(512, 424);
+                img.Bytes = depthPixelData;
+                //최종 이미지 화면에 출력
+                BodyOnDepthImage.Source = BitmapSourceConvert.ToBitmapSource(img);
+            }        
+
+
+            
+        }
         private Image<Bgr, Byte> LoadImage(String path)
         {            
             Image<Bgr, Byte> img = new Image<Bgr, Byte>(path);
@@ -94,12 +186,45 @@ namespace DataReader
             ShowColorImage(img_number);
             ShowInfraredImage(img_number);
             ShowDepthImage(img_number);
+            ShowBodyOnDepthImage(img_number);
                    
         }
         private void FrameInput_Click(object sender, RoutedEventArgs e)
         {
             frameCount = uint.Parse(FrameInputField.Text);
             FrameController.Maximum = frameCount - 1;
+        }
+        private void CSVToBinInput_Click(object sender, RoutedEventArgs e)
+        {
+            string bodyfile_path = filepath + "Body\\Fileskeleton.csv";
+            string bodyfile_bin_path = filepath + "Body\\Fileskeleton.bin";
+
+            List<bodyInfo_Structure> items = new List<bodyInfo_Structure>();
+            foreach (var line in File.ReadAllLines(bodyfile_path))
+            {
+                var parts = line.Split(',');
+                items.Add(new bodyInfo_Structure
+                {
+                    x = float.Parse(parts[0]),
+                    y = float.Parse(parts[1]),
+                    z = float.Parse(parts[2]),
+                    state = int.Parse(parts[3]),
+                    PlayerIndex = int.Parse(parts[4]),
+                });
+            }
+
+            using (var fileStream = new FileStream(bodyfile_bin_path, FileMode.Create, FileAccess.Write, FileShare.None))
+            using (var writer = new BinaryWriter(fileStream))
+            {
+                foreach (var item in items)
+                {
+                    writer.Write(item.x);
+                    writer.Write(item.y);
+                    writer.Write(item.z);
+                    writer.Write(item.state);
+                    writer.Write(item.PlayerIndex);
+                }
+            }
         }
     }
 
