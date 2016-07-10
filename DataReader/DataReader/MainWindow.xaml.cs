@@ -175,6 +175,37 @@ namespace DataReader
 
             
         }
+        private void ReadMapBinary(int img_number)
+        {
+            string file_number_path = filepath + "Mapp\\FileMapp_" + img_number.ToString() + ".bin";
+
+            using (BinaryReader b = new BinaryReader(File.Open(file_number_path, FileMode.Open)))
+            {
+                int pos = 0;
+                int length = (int)b.BaseStream.Length;
+
+                byte[] mappData = new byte[1024 * 424];
+
+
+                //binary파일이 하나의 픽셀 대응점마다 1byte가 아니라 2byte씩 할당함
+                //따라서 이 파일을 읽어올 때에 1byte씩 읽지 말고 2byte씩 읽어야 제대로 된 값을 읽어 올 수 있음
+
+                
+                int index = 0;
+                while (pos < length)
+                {
+                    mappData[index++] = (byte)b.ReadInt32();
+
+                    pos +=  sizeof(int);
+                }
+
+                for (int i = 0; i < 30; i++)
+                    Console.Text += mappData[i].ToString() + " ";
+                    //Console.Text = mappData[0].ToString() + " " + mappData[1].ToString() + " " + mappData[2].ToString() + " " + mappData[3].ToString() + " " + mappData[4].ToString() + " " + mappData[5].ToString() + " " + mappData[6].ToString(); 
+                 
+                
+            }
+        }
         private Image<Bgr, Byte> LoadImage(String path)
         {            
             Image<Bgr, Byte> img = new Image<Bgr, Byte>(path);
@@ -187,6 +218,7 @@ namespace DataReader
             ShowInfraredImage(img_number);
             ShowDepthImage(img_number);
             ShowBodyOnDepthImage(img_number);
+            ReadMapBinary(img_number);
                    
         }
         private void FrameInput_Click(object sender, RoutedEventArgs e)
