@@ -7,6 +7,7 @@
         <Image x:Name="InfraredImage" Height="212" Width="256" Margin="399,26,337,431"/>
         <Image x:Name="DepthImage" Height="212" Width="256" Margin="655,26,81,431"/>
         <Image x:Name="BodyOnDepthImage" Height="212" Width="256" Margin="28,434,708,23"/>
+        <Image x:Name="RGBinDepth" Height="212" Width="256" Margin="289,434,447,23"/>
         <TextBox x:Name="FrameInputField" Height="20" Width="50"/>
         <TextBox x:Name="Console" Margin="655,256,10,23"/>        
         <Button x:Name="FrameInputBtn" Height="20" Width="50" Margin="521,324,421,325" Click="FrameInput_Click">Input</Button>

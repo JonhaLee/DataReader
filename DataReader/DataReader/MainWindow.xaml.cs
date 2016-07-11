@@ -37,6 +37,7 @@ namespace DataReader
     public partial class MainWindow : Window
     {
         String filepath = "C:\\Users\\Jonha\\Desktop\\Data\\";
+        //String filepath = "C:\\Saved_Data\\Data\\";
         uint frameCount = 100;
             
         public MainWindow()
@@ -170,41 +171,103 @@ namespace DataReader
                 img.Bytes = depthPixelData;
                 //최종 이미지 화면에 출력
                 BodyOnDepthImage.Source = BitmapSourceConvert.ToBitmapSource(img);
-            }        
-
-
-            
+            } 
         }
         private void ReadMapBinary(int img_number)
         {
             string file_number_path = filepath + "Mapp\\FileMapp_" + img_number.ToString() + ".bin";
-
+            //byte[] mappData = new byte[1024 * 424];
+            byte[] depthPixelData = new byte[512 * 424];
+            /*
             using (BinaryReader b = new BinaryReader(File.Open(file_number_path, FileMode.Open)))
             {
                 int pos = 0;
                 int length = (int)b.BaseStream.Length;
 
-                byte[] mappData = new byte[1024 * 424];
-
-
                 //binary파일이 하나의 픽셀 대응점마다 1byte가 아니라 2byte씩 할당함
                 //따라서 이 파일을 읽어올 때에 1byte씩 읽지 말고 2byte씩 읽어야 제대로 된 값을 읽어 올 수 있음
-
-                
                 int index = 0;
                 while (pos < length)
                 {
-                    mappData[index++] = (byte)b.ReadInt32();
-
-                    pos +=  sizeof(int);
+                    mappData[index++] = (byte)b.ReadInt16();
+                    pos +=  2 * sizeof(byte);
                 }
+            }*/
+            Image<Gray, Byte> test = new Image<Gray, Byte>(1920, 1080);
+            byte[] mappData = File.ReadAllBytes(file_number_path);    
+              
+                   
+            
+           
+            string depthfile_number_path = filepath + "Depth\\Filedepth_" + img_number.ToString() + ".bin";
 
-                for (int i = 0; i < 30; i++)
-                    Console.Text += mappData[i].ToString() + " ";
-                    //Console.Text = mappData[0].ToString() + " " + mappData[1].ToString() + " " + mappData[2].ToString() + " " + mappData[3].ToString() + " " + mappData[4].ToString() + " " + mappData[5].ToString() + " " + mappData[6].ToString(); 
-                 
-                
+            using (BinaryReader b = new BinaryReader(File.Open(depthfile_number_path, FileMode.Open)))
+            {
+                int pos = 0;
+                int length = (int)b.BaseStream.Length;
+
+                //binary파일이 하나의 픽셀 대응점마다 1byte가 아니라 2byte씩 할당함
+                //따라서 이 파일을 읽어올 때에 1byte씩 읽지 말고 2byte씩 읽어야 제대로 된 값을 읽어 올 수 있음
+                int index = 0;
+                while (pos < length)
+                {                  
+                    depthPixelData[index++] = (byte)b.ReadInt16();                    
+                    pos += 2 * sizeof(byte);
+                }
             }
+            
+            Image<Gray, Byte> gray_img = new Image<Gray, Byte>(512, 424);
+            gray_img.Bytes = depthPixelData;
+            Image<Bgr, Byte> result_img = gray_img.Convert<Bgr, Byte>();
+            
+            
+            string img_number_path = filepath + "Color\\KinectScreenshot_RGB" + img_number.ToString() + ".bmp";
+            Image<Bgr, Byte> color_img = LoadImage(img_number_path);
+
+
+            /*
+            for (int row = 0; row < 424; row++)
+            {
+                for (int col = 0; col < 512; col++)
+                {
+                    Gray val = new Gray();
+                    if (Gray.Equals(gray_img[row, col], val) == false)
+                    {
+                        int x = mappData[(row * 1024 + (col * 2)) + 1];
+                        int y = mappData[(row * 1024 + (col * 2))];
+              
+                        if ((x > 0 && x < 1920) && (y > 0 && y < 1080))
+                        {                         
+                            result_img[row, col] = color_img[y, x];                            
+                        }
+                    }
+                }
+            }
+            RGBinDepth.Source = BitmapSourceConvert.ToBitmapSource(result_img);
+            */
+        
+
+            int rowSize = sizeof(short) + sizeof(short);       
+            int offset = 0;
+            for (int row = 0; row < 424; row++)
+            {
+                for (int col = 0; col < 512; col++)
+                {
+                    Gray val = new Gray();
+                    if (Gray.Equals(gray_img[row, col], val) == false)
+                    {
+                        int y = BitConverter.ToInt16(mappData, offset + 0);
+                        int x = BitConverter.ToInt16(mappData, offset + 2);
+
+                        if ((x > 0 && x < 1920) && (y > 0 && y < 1080))
+                        {
+                            result_img[row, col] = color_img[y, x];
+                        }
+                    }
+                    offset += rowSize;
+                }
+            }
+            RGBinDepth.Source = BitmapSourceConvert.ToBitmapSource(result_img);           
         }
         private Image<Bgr, Byte> LoadImage(String path)
         {            
