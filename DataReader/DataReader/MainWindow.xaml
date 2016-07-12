@@ -22,7 +22,7 @@
         </WrapPanel>
         <WrapPanel Height="240" Width="370" Margin="10,266,598,163">
             <Border Background="Gray">
-                <Image x:Name="DepthInRGBImageViewer" Height="212" Width="370"/>
+                <Image x:Name="DepthInColorImageViewer" Height="212" Width="370"/>
             </Border>
         </WrapPanel>
         <WrapPanel Height="240" Width="256" Margin="387,266,349,163">
@@ -32,19 +32,32 @@
         </WrapPanel>
         <WrapPanel Height="240" Width="256" Margin="643,266,93,163">
             <Border Background="Gray">
-                <Image x:Name="RGBinDepthImageViewer" Height="212" Width="256"/>
+                <Image x:Name="ColorinDepthImageViewer" Height="212" Width="256"/>
             </Border>
         </WrapPanel>
         <WrapPanel Height="100" Width="400" Orientation="Horizontal" Margin="582,505,10,14">
             <TextBlock Text="Frames : " />
             <TextBox x:Name="FrameInputField" Height="20" Width="50"/>            
-            <Button x:Name="ImageLoad" Height="20" Width="80" Click="ImageLoad_Click" Content="ImagesLoad" />
+            <Button x:Name="ImageLoad" Height="20" Width="80" Click="Button_Click" Content="ImagesLoad" />
             <Button x:Name="CSVToBinBtn" Height="20" Width="80"  Click="CSVToBinInput_Click" Content="CsvToBinary" />
-            <TextBox x:Name="Console" Width="300"/>
+            <TextBox x:Name="Console" Width="400"/>
+            <WrapPanel Width="400">
+                <TextBlock Width="100" Text="ViewerSetting : " />
+            </WrapPanel>
+            <CheckBox Name="Check_ColorImageShow" Content="Color" Checked="CheckBox_Checked" IsChecked="True" Unchecked="CheckBox_Unchecked" />
+            <CheckBox Name="Check_InfraredImageShow" Content="Infrared" Checked="CheckBox_Checked" IsChecked="True" Unchecked="CheckBox_Unchecked" />
+            <CheckBox Name="Check_DepthImageShow" Content="Depth" Checked="CheckBox_Checked" IsChecked="True" Unchecked="CheckBox_Unchecked" />
+            <CheckBox Name="Check_DepthInColorImageShow" Content="DepthInColor" Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked" />
+            <CheckBox Name="Check_BodyOnDepthImageShow" Content="BodyOnDepth" Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked" />
+            <CheckBox Name="Check_ColorInDepthImageShow" Content="ColorInDepth" Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked" />
+           
         </WrapPanel>
-        <WrapPanel Height="50" Width="300" Margin="17,530,675,89">
-            <TextBlock Text="FrameSlider" />
-            <Slider Name="FrameController" Width="300" Height="50" ValueChanged="FrameController_Changed" Maximum="99" TickPlacement="BottomRight" TickFrequency="1" IsSnapToTickEnabled ="true" />
+        <WrapPanel Height="50" Width="310" Margin="17,530,665,89">
+            <Button Name="PreviousFrameBtn" Content="Previous Frame" Click="Button_Click" />
+            <TextBlock Text=" CurrentFrame : " />
+            <TextBlock Name="T_CurrentFrame" Width="50"  Text="0/100" />
+            <Button Name="NextFrameBtn" Content="Next Frame" Click="Button_Click" />
+            <Slider Name="FrameController" Width="310" Height="50" ValueChanged="FrameController_Changed" Maximum="99" TickPlacement="BottomRight" TickFrequency="1" IsSnapToTickEnabled ="true" />
         </WrapPanel>
     </Grid>
 </Window>
