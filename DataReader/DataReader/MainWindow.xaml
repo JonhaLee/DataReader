@@ -3,19 +3,48 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="MainWindow" Height="700" Width="1000">
     <Grid>
-        <Image Name="ColorImage" Height="216" Width="384"  Margin="10,10,639,418"/>
-        <Image x:Name="InfraredImage" Height="212" Width="256" Margin="399,26,337,431"/>
-        <Image x:Name="DepthImage" Height="212" Width="256" Margin="655,26,81,431"/>
-        <Image x:Name="BodyOnDepthImage" Height="212" Width="256" Margin="28,434,708,23"/>
-        <Image x:Name="RGBinDepth" Height="212" Width="256" Margin="289,434,447,23"/>
-        <TextBox x:Name="FrameInputField" Height="20" Width="50"/>
-        <TextBox x:Name="Console" Margin="655,256,10,23"/>        
-        <Button x:Name="FrameInputBtn" Height="20" Width="50" Margin="521,324,421,325" Click="FrameInput_Click">Input</Button>
-        <Button x:Name="CSVToBinBtn" Height="20" Width="50" Margin="521,349,421,300" Click="CSVToBinInput_Click">CsvToBin</Button>
-        <StackPanel Height="30" Width="300" Margin="28,256,664,383">
-            <Slider Name="FrameController" ValueChanged="FrameController_Changed" Maximum="99" TickPlacement="BottomRight" TickFrequency="1" IsSnapToTickEnabled ="true" />
-        </StackPanel>
-        
-
+        <WrapPanel Height="240" Width="370" HorizontalAlignment="Center" Margin="10,26,598,403">            
+            <Border Background="Gray">
+                <Image Name="ColorImageViewer" Height="212" Width="370" />
+            </Border>                    
+            <TextBlock Text=" ImageLoad?" />
+            <TextBlock Name="ColorImageState" Width="100"></TextBlock>
+        </WrapPanel>
+        <WrapPanel Height="240" Width="256" Margin="387,26,349,403">
+            <Border Background="Gray">
+                <Image x:Name="InfraredImageViewer" Height="212" Width="256"/>
+            </Border>
+        </WrapPanel>
+        <WrapPanel Height="240" Width="256" Margin="643,26,93,403">
+            <Border Background="Gray">
+                <Image x:Name="DepthImageViewer" Height="212" Width="256"/>
+            </Border>
+        </WrapPanel>
+        <WrapPanel Height="240" Width="370" Margin="10,266,598,163">
+            <Border Background="Gray">
+                <Image x:Name="DepthInRGBImageViewer" Height="212" Width="370"/>
+            </Border>
+        </WrapPanel>
+        <WrapPanel Height="240" Width="256" Margin="387,266,349,163">
+            <Border Background="Gray">
+                <Image x:Name="BodyOnDepthImageViewer" Height="212" Width="256"/>
+            </Border>
+        </WrapPanel>
+        <WrapPanel Height="240" Width="256" Margin="643,266,93,163">
+            <Border Background="Gray">
+                <Image x:Name="RGBinDepthImageViewer" Height="212" Width="256"/>
+            </Border>
+        </WrapPanel>
+        <WrapPanel Height="100" Width="400" Orientation="Horizontal" Margin="582,505,10,14">
+            <TextBlock Text="Frames : " />
+            <TextBox x:Name="FrameInputField" Height="20" Width="50"/>            
+            <Button x:Name="ImageLoad" Height="20" Width="80" Click="ImageLoad_Click" Content="ImagesLoad" />
+            <Button x:Name="CSVToBinBtn" Height="20" Width="80"  Click="CSVToBinInput_Click" Content="CsvToBinary" />
+            <TextBox x:Name="Console" Width="300"/>
+        </WrapPanel>
+        <WrapPanel Height="50" Width="300" Margin="17,530,675,89">
+            <TextBlock Text="FrameSlider" />
+            <Slider Name="FrameController" Width="300" Height="50" ValueChanged="FrameController_Changed" Maximum="99" TickPlacement="BottomRight" TickFrequency="1" IsSnapToTickEnabled ="true" />
+        </WrapPanel>
     </Grid>
 </Window>

@@ -38,6 +38,9 @@ namespace DataReader
     {
         String filepath = "C:\\Users\\Jonha\\Desktop\\Data\\";
         //String filepath = "C:\\Saved_Data\\Data\\";
+
+        List<Image<Bgr, Byte>> colorImages;
+
         uint frameCount = 100;
             
         public MainWindow()
@@ -48,20 +51,18 @@ namespace DataReader
         private void InitializeData()
         {
             FrameController.Maximum = frameCount - 1;
-                   
-
         }
         private void ShowColorImage(int img_number)
         {
             string img_number_path = filepath + "Color\\KinectScreenshot_RGB" + img_number.ToString() + ".bmp";
             Image<Bgr, Byte> img = LoadImage(img_number_path);
-            ColorImage.Source = BitmapSourceConvert.ToBitmapSource(img);     
+            ColorImageViewer.Source = BitmapSourceConvert.ToBitmapSource(img);     
         }
         private void ShowInfraredImage(int img_number)
         {
             string img_number_path = filepath + "Infrared\\KinectScreenshot_IR" + img_number.ToString() + ".bmp";
             Image<Bgr, Byte> img = LoadImage(img_number_path);
-            InfraredImage.Source = BitmapSourceConvert.ToBitmapSource(img); 
+            InfraredImageViewer.Source = BitmapSourceConvert.ToBitmapSource(img); 
         }
         private void ShowDepthImage(int img_number)
         {
@@ -88,7 +89,7 @@ namespace DataReader
               
                 Image<Gray, Byte> img = new Image<Gray, Byte>(512, 424);
                 img.Bytes = depthPixelData;
-                DepthImage.Source = BitmapSourceConvert.ToBitmapSource(img);
+                DepthImageViewer.Source = BitmapSourceConvert.ToBitmapSource(img);
             }            
         }
         private void ShowBodyOnDepthImage(int img_number)
@@ -170,7 +171,7 @@ namespace DataReader
                 Image<Gray, Byte> img = new Image<Gray, Byte>(512, 424);
                 img.Bytes = depthPixelData;
                 //최종 이미지 화면에 출력
-                BodyOnDepthImage.Source = BitmapSourceConvert.ToBitmapSource(img);
+                BodyOnDepthImageViewer.Source = BitmapSourceConvert.ToBitmapSource(img);
             } 
         }
         private void ReadMapBinary(int img_number)
@@ -267,8 +268,9 @@ namespace DataReader
                     offset += rowSize;
                 }
             }
-            RGBinDepth.Source = BitmapSourceConvert.ToBitmapSource(result_img);           
+            RGBinDepthImageViewer.Source = BitmapSourceConvert.ToBitmapSource(result_img);           
         }
+      
         private Image<Bgr, Byte> LoadImage(String path)
         {            
             Image<Bgr, Byte> img = new Image<Bgr, Byte>(path);
@@ -284,11 +286,16 @@ namespace DataReader
             ReadMapBinary(img_number);
                    
         }
-        private void FrameInput_Click(object sender, RoutedEventArgs e)
+        private void ImageLoad_Click(object sender, RoutedEventArgs e)
         {
             frameCount = uint.Parse(FrameInputField.Text);
             FrameController.Maximum = frameCount - 1;
         }
+
+        /// <summary>
+        /// 출처
+        /// http://lacti.me/2014/07/09/csharp-csv-to-binary/
+        /// </summary>
         private void CSVToBinInput_Click(object sender, RoutedEventArgs e)
         {
             string bodyfile_path = filepath + "Body\\Fileskeleton.csv";
