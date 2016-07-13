@@ -86,8 +86,7 @@ namespace DataReader
             depthData = new short[512 * 424];
             HR_depthData = new short[1920 * 1080];
             bodyData = new List<bodyInfo_Structure>();    
-            mappData = new byte[1024 * 424];
-            
+            mappData = new byte[1024 * 424];            
 
             isShowColorImage = Check_ColorImageShow.IsChecked.Value;
             isShowInfraredImage = Check_InfraredImageShow.IsChecked.Value;
@@ -148,63 +147,7 @@ namespace DataReader
             else
                 Console.Text += "rgbInDepth Image is null\n";   
         }
-        private void ReadMapBinary(int img_number)
-        {
-            string file_number_path = filepath + "Mapp\\FileMapp_" + img_number.ToString() + ".bin";
-            //byte[] mappData = new byte[1024 * 424];
-            byte[] depthPixelData = new byte[512 * 424];
-        
-            Image<Gray, Byte> test = new Image<Gray, Byte>(1920, 1080);
-            byte[] mappData = File.ReadAllBytes(file_number_path);
-           
-            string depthfile_number_path = filepath + "Depth\\Filedepth_" + img_number.ToString() + ".bin";
-
-            using (BinaryReader b = new BinaryReader(File.Open(depthfile_number_path, FileMode.Open)))
-            {
-                int pos = 0;
-                int length = (int)b.BaseStream.Length;
-
-                //binary파일이 하나의 픽셀 대응점마다 1byte가 아니라 2byte씩 할당함
-                //따라서 이 파일을 읽어올 때에 1byte씩 읽지 말고 2byte씩 읽어야 제대로 된 값을 읽어 올 수 있음
-                int index = 0;
-                while (pos < length)
-                {                  
-                    depthPixelData[index++] = (byte)b.ReadInt16();                    
-                    pos += 2 * sizeof(byte);
-                }
-            }
-            
-            Image<Gray, Byte> gray_img = new Image<Gray, Byte>(512, 424);
-            gray_img.Bytes = depthPixelData;
-            Image<Bgr, Byte> result_img = gray_img.Convert<Bgr, Byte>();
-            
-            
-            string img_number_path = filepath + "Color\\KinectScreenshot_RGB" + img_number.ToString() + ".bmp";
-            Image<Bgr, Byte> color_img = LoadImage(img_number_path);
-
-
-            int rowSize = sizeof(short) + sizeof(short);       
-            int offset = 0;
-            for (int row = 0; row < 424; row++)
-            {
-                for (int col = 0; col < 512; col++)
-                {
-                    Gray val = new Gray();
-                    if (Gray.Equals(gray_img[row, col], val) == false)
-                    {
-                        int y = BitConverter.ToInt16(mappData, offset + 0);
-                        int x = BitConverter.ToInt16(mappData, offset + 2);
-
-                        if ((x > 0 && x < 1920) && (y > 0 && y < 1080))
-                        {
-                            result_img[row, col] = color_img[y, x];
-                        }
-                    }
-                    offset += rowSize;
-                }
-            }
-            ColorinDepthImageViewer.Source = BitmapSourceConvert.ToBitmapSource(result_img);           
-        }
+      
         private void DepthToHighResolution()
         {
             Array.Clear(HR_depthData, 0, HR_depthData.Length);
@@ -301,11 +244,11 @@ namespace DataReader
                     }
                 }
             }
-
+            
             Image<Gray, Byte> img = new Image<Gray, Byte>(512, 424);
             img.Bytes = background;
             //최종 이미지 화면에 출력
-            BodyOnDepthImageViewer.Source = BitmapSourceConvert.ToBitmapSource(img);
+            bodyOnDepthImage_viewer = BitmapSourceConvert.ToBitmapSource(img);
         }
       
         private Image<Bgr, Byte> LoadImage(String path)

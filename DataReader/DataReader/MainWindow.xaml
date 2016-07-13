@@ -35,12 +35,11 @@
                 <Image x:Name="ColorinDepthImageViewer" Height="212" Width="256"/>
             </Border>
         </WrapPanel>
-        <WrapPanel Height="100" Width="400" Orientation="Horizontal" Margin="582,505,10,14">
+        <WrapPanel Height="150" Width="400" Orientation="Horizontal" Margin="567,517,25,2">
             <TextBlock Text="Frames : " />
             <TextBox x:Name="FrameInputField" Height="20" Width="50"/>            
             <Button x:Name="ImageLoad" Height="20" Width="80" Click="Button_Click" Content="ImagesLoad" />
-            <Button x:Name="CSVToBinBtn" Height="20" Width="80"  Click="CSVToBinInput_Click" Content="CsvToBinary" />
-            <TextBox x:Name="Console" Width="400"/>
+            <Button x:Name="CSVToBinBtn" Height="20" Width="80"  Click="CSVToBinInput_Click" Content="CsvToBinary" />            
             <WrapPanel Width="400">
                 <TextBlock Width="100" Text="ViewerSetting : " />
             </WrapPanel>
@@ -50,6 +49,7 @@
             <CheckBox Name="Check_DepthInColorImageShow" Content="DepthInColor" Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked" />
             <CheckBox Name="Check_BodyOnDepthImageShow" Content="BodyOnDepth" Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked" />
             <CheckBox Name="Check_ColorInDepthImageShow" Content="ColorInDepth" Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked" />
+            <TextBox x:Name="Console" Width="390" Height="70" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
            
         </WrapPanel>
         <WrapPanel Height="50" Width="310" Margin="17,530,665,89">
