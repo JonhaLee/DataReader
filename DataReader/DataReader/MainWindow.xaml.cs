@@ -151,27 +151,88 @@ namespace DataReader
         private void DepthToHighResolution()
         {
             Array.Clear(HR_depthData, 0, HR_depthData.Length);
-
+      
             int rowSize = sizeof(short) + sizeof(short);
             int offset = 0;
             for (int row = 0; row < 424; row++)
             {
                 for (int col = 0; col < 512; col++)
                 {
-                    Gray val = new Gray();
-                    if (Gray.Equals(depthImage[row, col], val) == false)
+                    //Gray val = new Gray();
+                    //if (Gray.Equals(depthImage[row, col], val) == false)
                     {
                         int y = BitConverter.ToInt16(mappData, offset + 0);
                         int x = BitConverter.ToInt16(mappData, offset + 2);
 
                         if ((x > 0 && x < 1920) && (y > 0 && y < 1080))
                         {
-                            HR_depthData[y * 1920 + x] = depthData[row * 512 + col];
+                            HR_depthData[y * 1920 + x] = depthData[row * 512 + col];                           
                         }
                     }
                     offset += rowSize;
                 }
             }
+
+            for (int row = 0; row < 1080; row++)
+            {
+                for (int col = 0; col < 1920; col++)
+                {
+                    
+                }
+            }
+
+            /*
+            short minDepth = 1;
+
+            short start_val = 0;
+            short end_val = 0;
+            int start_pos = 0;
+            int end_pos = 0;
+
+            for (int row = 0; row < 1080; row++)
+            {
+                for (int col = 0; col < 1920; col++)
+                {
+                    while(true){
+                        if (HR_depthData[row * 1920 + col] != 0)
+                        {
+                            if (start_pos == 0)
+                            {                               
+                                start_val = HR_depthData[row * 1920 + col];
+                                start_pos = row * 1920 + col;
+                            }
+                            else if(start_pos != 0 && end_pos == 0)
+                            {
+                                end_val = HR_depthData[row * 1920 + col];
+                                end_pos = row * 1920 + col;
+                            }
+                        }
+
+                        if (start_pos != 0 && end_pos != 0)
+                        {             
+                            for (int i = start_pos + 1; i < end_pos; i++)
+                            {  
+                                HR_depthData[i] = start_val;
+                                bilinearInterpolation(start_pos, end_pos, )
+                            }                            
+                            break;
+                        }
+                        if (col < 1920 - 1) col++;
+                        else break;
+                    }
+                
+                    start_val = 0;
+                    end_val = 0;
+                    start_pos = 0;
+                    end_pos = 0;
+                }
+            } 
+             * */
+        }
+
+        private short bilinearInterpolation(int p, int q, int length)
+        {
+            return 0;
         }
        
         private void Mapp_DepthToColor()
@@ -180,7 +241,7 @@ namespace DataReader
             //Array.Copy(HR_depthData, depthInColor.Bytes, HR_depthData.Length);
             for (int y = 0; y < 1080; y++)
                 for (int x = 0; x < 1920; x++ )
-                    depthInColor[y, x] = new Gray((byte) HR_depthData[y * 1920 + x]);
+                    depthInColor[y, x] = new Gray(HR_depthData[y * 1920 + x] >= 0 ? (byte)HR_depthData[y * 1920 + x] : 255);
 
             depthInColor_viewer = BitmapSourceConvert.ToBitmapSource(depthInColor);  
         }
@@ -195,8 +256,8 @@ namespace DataReader
             {
                 for (int col = 0; col < 512; col++)
                 {
-                    Gray val = new Gray();
-                    if (Gray.Equals(depthImage[row, col], val) == false)
+                    //Gray val = new Gray();                    
+                    //if (Gray.Equals(depthImage[row, col], val) == false)
                     {
                         int y = BitConverter.ToInt16(mappData, offset + 0);
                         int x = BitConverter.ToInt16(mappData, offset + 2);
