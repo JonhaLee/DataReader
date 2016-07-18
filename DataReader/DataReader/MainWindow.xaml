@@ -39,7 +39,8 @@
             <TextBlock Text="Frames : " />
             <TextBox x:Name="FrameInputField" Height="20" Width="50"/>            
             <Button x:Name="ImageLoad" Height="20" Width="80" Click="Button_Click" Content="ImagesLoad" />
-            <Button x:Name="CSVToBinBtn" Height="20" Width="80"  Click="CSVToBinInput_Click" Content="CsvToBinary" />            
+            <Button x:Name="CSVToBinBtn" Height="20" Width="80"  Click="CSVToBinInput_Click" Content="CsvToBinary" />
+            <Button x:Name="HRDepthToBinBtn" Height="20" Width="100"  Click="HRDetphToBinInput_Click" Content="HRDepthToBinary" />
             <WrapPanel Width="400">
                 <TextBlock Width="100" Text="ViewerSetting : " />
             </WrapPanel>

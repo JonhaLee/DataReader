@@ -58,21 +58,26 @@ namespace DataReader
         //depth data, image
         short[] depthData;   //(Original)
         Image<Gray, Byte> depthImage;
-        ImageSource depthImage_viewer;
-        
+        ImageSource depthImage_viewer;        
         //body data, 
         List<bodyInfo_Structure> bodyData;
         //Body on Depth Image
         ImageSource bodyOnDepthImage_viewer;
-
         //mapp matrix
         byte[] mappData;
         //Depth in Color data, Image
         short[] HR_depthData;   //(High Resolution)
-        ImageSource depthInColor_viewer;
+        short[] HR_depthData_bin;   //(High Resolution for save(.bin))
+        //only read
+        short[] HR_depthData_read;
+        Image<Gray, Byte> HRdepthImage;
+        ImageSource HRdepthImage_viewer;  
 
+        ImageSource depthInColor_viewer;
         //Color in Depth image
         ImageSource colorInDepth_viewer;
+
+        
             
         public MainWindow()
         {
@@ -85,6 +90,8 @@ namespace DataReader
 
             depthData = new short[512 * 424];
             HR_depthData = new short[1920 * 1080];
+            HR_depthData_bin = new short[3840 * 1080];
+            HR_depthData_read = new short[3840 * 1080];
             bodyData = new List<bodyInfo_Structure>();    
             mappData = new byte[1024 * 424];            
 
@@ -120,11 +127,13 @@ namespace DataReader
         private void ShowDepthInColorImage()
         {
             //이미지 mapp 과정
-            DepthToHighResolution();
-            Mapp_DepthToColor();
+            //DepthToHighResolution();
+            //Mapp_DepthToColor();
 
-            if (depthInColor_viewer != null)
-                DepthInColorImageViewer.Source = depthInColor_viewer;
+
+
+            if (HRdepthImage_viewer != null)
+                DepthInColorImageViewer.Source = HRdepthImage_viewer;
             else
                 Console.Text += "depthInColor Image is null\n";  
         }
@@ -166,7 +175,8 @@ namespace DataReader
 
                         if ((x > 0 && x < 1920) && (y > 0 && y < 1080))
                         {
-                            HR_depthData[y * 1920 + x] = depthData[row * 512 + col];                           
+                            HR_depthData[y * 1920 + x] = depthData[row * 512 + col];
+                            HR_depthData_bin[y * 3840 + (x * 2) + 1] = 1;
                         }
                     }
                     offset += rowSize;
@@ -179,7 +189,7 @@ namespace DataReader
             int iStartPoint = 0;
             int iEndPoint = 0;
             int repeat = 5;
-            int th = 20;
+            int th = 10;
 
 
             for (int count = 0; count < repeat; count++)
@@ -288,8 +298,15 @@ namespace DataReader
                     iStartPoint = 0;
                     iEndPoint = 0;
                 }
-            }           
-          
+            }
+
+            for (int row = 0; row < 1080; row++)
+            {
+                for (int col = 0; col < 1920; col++)
+                {
+                    HR_depthData_bin[row * 3840 + (col * 2)] = HR_depthData[row * 1920 + col];
+                }
+            }
         }
 
         private short bilinearInterpolation(int p, int q, int length)
@@ -431,6 +448,33 @@ namespace DataReader
                 depthImage_viewer = BitmapSourceConvert.ToBitmapSource(depthImage);
             }            
         }
+        private void LoadHRDepthImage(int img_number)
+        {
+            string path = filepath + "HR_Depth\\FileHRdepth_" + img_number.ToString() + ".bin";
+            using (BinaryReader b = new BinaryReader(File.Open(path, FileMode.Open)))
+            {
+                int pos = 0;
+                int length = (int)b.BaseStream.Length;
+
+                byte[] depthImageTmp = new byte[1920 * 1080];
+                //binary파일이 하나의 픽셀 대응점마다 1byte가 아니라 2byte씩 할당함
+                //따라서 이 파일을 읽어올 때에 1byte씩 읽지 말고 2byte씩 읽어야 제대로 된 값을 읽어 올 수 있음
+                int index = 0;
+                while (pos < length)
+                {
+                    HR_depthData_read[index] = b.ReadInt16();
+                    if(index % 2 == 0)
+                        depthImageTmp[index / 2] = (byte)HR_depthData_read[index];
+
+                    index++;
+                    pos += 2 * sizeof(byte);
+                }
+
+                HRdepthImage = new Image<Gray, Byte>(1920, 1080);
+                HRdepthImage.Bytes = depthImageTmp;
+                HRdepthImage_viewer = BitmapSourceConvert.ToBitmapSource(HRdepthImage);
+            }            
+        }
         private void LoadMappMatrix(int img_number)
         {
             string path = filepath + "Mapp\\FileMapp_" + img_number.ToString() + ".bin";
@@ -481,6 +525,31 @@ namespace DataReader
             else
                 Console.Text += "BodyData Can't loaded\n";
         }
+
+        private void SaveHRDepthData()
+        {
+            for (int index = 0; index < frameCount; index++)
+            {
+                LoadDepthImage(index);
+                LoadMappMatrix(index);
+                DepthToHighResolution();
+
+                string path = filepath + "HR_Depth\\FileHRdepth_" + index.ToString() + ".bin";
+
+                FileStream fs = new FileStream(path, FileMode.Create);
+                using (BinaryWriter bw = new BinaryWriter(fs, System.Text.Encoding.Default))
+                {
+                    foreach (short value in HR_depthData_bin)
+                    {
+                        bw.Write(value);
+                    }
+                }
+
+                Console.Text = index.ToString() + ".bin complete\n";
+            }
+
+            Console.Text = "HRDepthData Save complete";
+        }
         
         private void FrameController_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
@@ -489,7 +558,7 @@ namespace DataReader
             LoadColorImage(current_frame);
             LoadInfraredImage(current_frame);
             LoadDepthImage(current_frame);
-
+            LoadHRDepthImage(current_frame);
             LoadMappMatrix(current_frame);
             LoadBodyData(current_frame);
 
@@ -524,6 +593,10 @@ namespace DataReader
             if (checkBox.Name == "Check_DepthInColorImageShow")     isShowDepthInColorImage = flag;
             if (checkBox.Name == "Check_BodyOnDepthImageShow")      isShowBodyOnDepthImage = flag;
             if (checkBox.Name == "Check_ColorInDepthImageShow")     isShowColorInDepthImage = flag;           
+        }
+        private void HRDetphToBinInput_Click(object sender, RoutedEventArgs e)
+        {
+            SaveHRDepthData();
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
