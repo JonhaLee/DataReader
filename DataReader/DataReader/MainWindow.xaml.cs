@@ -173,61 +173,123 @@ namespace DataReader
                 }
             }
 
-            for (int row = 0; row < 1080; row++)
+            
+            bool isStartPoint = false;
+            bool isEndPoint = false;
+            int iStartPoint = 0;
+            int iEndPoint = 0;
+            int repeat = 5;
+            int th = 20;
+
+
+            for (int count = 0; count < repeat; count++)
             {
-                for (int col = 0; col < 1920; col++)
+                for (int row = 0; row < 1080; row++)
                 {
-                    
-                }
-            }
-
-            /*
-            short minDepth = 1;
-
-            short start_val = 0;
-            short end_val = 0;
-            int start_pos = 0;
-            int end_pos = 0;
-
-            for (int row = 0; row < 1080; row++)
-            {
-                for (int col = 0; col < 1920; col++)
-                {
-                    while(true){
-                        if (HR_depthData[row * 1920 + col] != 0)
+                    for (int col = 0; col < 1920; col++)
+                    {
+                        if (HR_depthData[row * 1920 + col] > 0)
                         {
-                            if (start_pos == 0)
-                            {                               
-                                start_val = HR_depthData[row * 1920 + col];
-                                start_pos = row * 1920 + col;
-                            }
-                            else if(start_pos != 0 && end_pos == 0)
+                            if (isStartPoint == false)
                             {
-                                end_val = HR_depthData[row * 1920 + col];
-                                end_pos = row * 1920 + col;
+                                isStartPoint = true;
+                                iStartPoint = row * 1920 + col;
+
+                                for (int i = row * 1920 + col + 1; i < row * 1920 + 1920; i++)
+                                {
+                                    if (HR_depthData[i] > 0)
+                                    {                                        
+                                        isEndPoint = true;
+                                        iEndPoint = i;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (isStartPoint == true && isEndPoint == true)
+                            {
+                                if (iEndPoint - iStartPoint < th)
+                                {
+                                    int index = row * 1920 + col;
+
+                                    float total = iEndPoint - iStartPoint;
+
+                                    float result = ((float)(iEndPoint - index) / total) * HR_depthData[iStartPoint] + ((float)(index - iStartPoint) / total) * HR_depthData[iEndPoint];
+                                    HR_depthData[index] = (short)result;
+                                }
                             }
                         }
 
-                        if (start_pos != 0 && end_pos != 0)
-                        {             
-                            for (int i = start_pos + 1; i < end_pos; i++)
-                            {  
-                                HR_depthData[i] = start_val;
-                                bilinearInterpolation(start_pos, end_pos, )
-                            }                            
-                            break;
+                        if (iEndPoint == row * 1920 + col)
+                        {
+                            isStartPoint = false;
+                            isEndPoint = false;
+                            iStartPoint = 0;
+                            iEndPoint = 0;
                         }
-                        if (col < 1920 - 1) col++;
-                        else break;
                     }
-                
-                    start_val = 0;
-                    end_val = 0;
-                    start_pos = 0;
-                    end_pos = 0;
+                    isStartPoint = false;
+                    isEndPoint = false;
+                    iStartPoint = 0;
+                    iEndPoint = 0;
                 }
-            } 
-             * */
+
+
+                for (int col = 0; col < 1920; col++)
+                {
+                    for (int row = 0; row < 1080; row++)
+                    {
+                        if (HR_depthData[row * 1920 + col] > 0)
+                        {
+                            if (isStartPoint == false)
+                            {
+                                isStartPoint = true;
+                                iStartPoint = row * 1920 + col;
+
+                                for (int i = (row + 1) * 1920 + col; i < 1079 * 1920 + col; i += 1920)
+                                {
+                                    if (HR_depthData[i] > 0)
+                                    {                                        
+                                        isEndPoint = true;
+                                        iEndPoint = i;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (isStartPoint == true && isEndPoint == true)
+                            {
+                                if ((iEndPoint - iStartPoint) / 1920 < th)
+                                {
+                                    int index = row * 1920 + col;
+
+                                    float total = (iEndPoint - iStartPoint) / 1920;
+
+                                    float result = ((float)((iEndPoint - index) / 1920) / total) * HR_depthData[iStartPoint] + ((float)((index - iStartPoint) / 1920) / total) * HR_depthData[iEndPoint];
+                                    HR_depthData[index] = (short)result;
+                                }
+                            }
+                        }
+
+                        if (iEndPoint == row * 1920 + col)
+                        {
+                            isStartPoint = false;
+                            isEndPoint = false;
+                            iStartPoint = 0;
+                            iEndPoint = 0;
+                        }
+                    }
+                    isStartPoint = false;
+                    isEndPoint = false;
+                    iStartPoint = 0;
+                    iEndPoint = 0;
+                }
+            }           
+          
         }
 
         private short bilinearInterpolation(int p, int q, int length)
@@ -238,11 +300,14 @@ namespace DataReader
         private void Mapp_DepthToColor()
         {
             Image<Gray, byte> depthInColor = new Image<Gray, byte>(new System.Drawing.Size(1920, 1080));
+            byte[] depthImageTmp = new byte[1920 * 1080];
             //Array.Copy(HR_depthData, depthInColor.Bytes, HR_depthData.Length);
             for (int y = 0; y < 1080; y++)
                 for (int x = 0; x < 1920; x++ )
-                    depthInColor[y, x] = new Gray(HR_depthData[y * 1920 + x] >= 0 ? (byte)HR_depthData[y * 1920 + x] : 255);
+                    //depthInColor[y, x] = new Gray(HR_depthData[y * 1920 + x]);// >= 0 ? (byte)HR_depthData[y * 1920 + x] : 255);
+                    depthImageTmp[y * 1920 + x] = (byte)HR_depthData[y * 1920 + x];
 
+            depthInColor.Bytes = depthImageTmp;
             depthInColor_viewer = BitmapSourceConvert.ToBitmapSource(depthInColor);  
         }
         private void Mapp_ColorToDepth()
