@@ -70,12 +70,18 @@ namespace DataReader
         //BodyIndex data
         byte[] bodyIndexData;        
         Image<Gray, Byte> bodyIndexImage;
-        ImageSource bodyIndexImage_viewer;  
+        ImageSource bodyIndexImage_viewer;
+        byte[] HR_bodyIndexData;   //(High Resolution)
+        byte[] HR_bodyIndexData_bin;   //(High Resolution for save(.bin))
+        Image<Gray, Byte> HRbodyIndexImage;
+        ImageSource HRbodyIndexImage_viewer;
+        //only read
+        byte[] HR_bodyIndexData_read;
         //mapp matrix
         byte[] mappData;
         //Depth in Color data, Image
         short[] HR_depthData;   //(High Resolution)
-        short[] HR_depthData_bin;   //(High Resolution for save(.bin))
+        short[] HR_depthData_bin;   //(High Resolution for save(.bin))        
         //only read
         short[] HR_depthData_read;
         Image<Gray, Byte> HRdepthImage;
@@ -141,6 +147,9 @@ namespace DataReader
             FrameController.Maximum = frameCount - 1;
 
             depthData = new short[512 * 424];
+            HR_bodyIndexData = new byte[1920 * 1080];
+            HR_bodyIndexData_bin = new byte[3840 * 1080];
+            HR_bodyIndexData_read = new byte[3840 * 1080];
             HR_depthData = new short[1920 * 1080];
             HR_depthData_bin = new short[3840 * 1080];
             HR_depthData_read = new short[3840 * 1080];
@@ -214,6 +223,86 @@ namespace DataReader
             else
                 Console.Text += "BodyIndex Image is null\n";
         }
+        private void ShowHRBodyIndexImage()
+        {
+            //이미지 mapp 과정
+            //DepthToHighResolution();
+            //Mapp_DepthToColor();
+
+            if (HRbodyIndexImage_viewer != null)
+                DepthInColorImageViewer.Source = HRbodyIndexImage_viewer;
+            else
+                Console.Text += "HRBodyIndex Image is null\n";
+        }
+        private void BodyIndexToHighResolution()
+        {
+            Array.Clear(HR_bodyIndexData, 0, HR_bodyIndexData.Length);
+
+            int rowSize = sizeof(byte) + sizeof(byte);
+            int offset = 0;
+            for (int row = 0; row < 424; row++)
+            {
+                for (int col = 0; col < 512; col++)
+                {
+                    //Gray val = new Gray();
+                    //if (Gray.Equals(depthImage[row, col], val) == false)
+                    {
+                        int y = BitConverter.ToInt16(mappData, offset + 0);
+                        int x = BitConverter.ToInt16(mappData, offset + 2);
+
+                        if ((x > 0 && x < 1920) && (y > 0 && y < 1080))
+                        {
+                            HR_bodyIndexData[y * 1920 + x] = bodyIndexData[row * 512 + col];
+                            HR_bodyIndexData_bin[y * 3840 + (x * 2) + 1] = 1;
+                        }
+                    }
+                    offset += rowSize;
+                }
+            }
+
+            byte[] tmp = new byte[1920 * 1080];
+            tmp = HR_bodyIndexData;
+            // for (int i = 0; i < 3; i++)
+            {
+                const int masksize = 7;
+                byte[] arr = new byte[masksize * masksize];
+
+                for (int row = 0; row < 1080; row++)
+                {
+                    for (int col = 0; col < 1920; col++)
+                    {
+                        if (tmp[row * 1920 + col] == 0)
+                        {
+                            Array.Clear(arr, 0, arr.Length);
+
+                            int index = 0;
+                            for (int off_y = -masksize / 2; off_y < masksize / 2; off_y++)
+                            {
+                                for (int off_x = -masksize / 2; off_x < masksize / 2; off_x++)
+                                {
+                                    if ((off_y + row >= 0 && off_y + row < 1080) && (off_x + col >= 0 && off_x + col < 1920))
+                                    {
+                                        //if (HR_depthData[(row + off_y) * 1920 + col + off_x] != 0)
+                                        arr[index] = tmp[(row + off_y) * 1920 + col + off_x];
+                                    }
+                                    index++;
+                                }
+                            }
+
+                            HR_bodyIndexData[row * 1920 + col] = BodyIndex_mask(arr, masksize);
+                        }
+                    }
+                }
+            }
+
+            for (int row = 0; row < 1080; row++)
+            {
+                for (int col = 0; col < 1920; col++)
+                {
+                    HR_bodyIndexData_bin[row * 3840 + (col * 2)] = HR_bodyIndexData[row * 1920 + col];
+                }
+            }
+        }
       
         private void DepthToHighResolution()
         {
@@ -285,6 +374,32 @@ namespace DataReader
             }
         }
 
+        private byte BodyIndex_mask(byte[] arr, int masksize)
+        {
+            double total = 0;
+            double sum = 0;
+
+            for (int y = 0; y < masksize; y++)
+            {
+                for (int x = 0; x < masksize; x++)
+                {
+                    if (arr[y * masksize + x] != 255)
+                        total += g3[y * masksize + x];
+                }
+            }
+
+            for (int y = 0; y < masksize; y++)
+            {
+                for (int x = 0; x < masksize; x++)
+                {
+                    if (arr[y * masksize + x] != 0)
+                        sum += 1.0 / total * (arr[y * masksize + x] * g3[y * masksize + x]);
+
+                }
+            }
+
+            return (byte)sum;
+        }
         private short G_mask(short[] arr, int masksize)
         {
             double total =  0;
@@ -553,7 +668,59 @@ namespace DataReader
 
             Console.Text = bodyIndexData[0].ToString();
         }
+        private void LoadHRBodyIndexImage(int img_number)
+        {
+            string path = filepath + "HR_BodyIndex\\FileHRbodyIndex_" + img_number.ToString() + ".bin";
+            using (BinaryReader b = new BinaryReader(File.Open(path, FileMode.Open)))
+            {
+                int pos = 0;
+                int length = (int)b.BaseStream.Length;
 
+                byte[] bodyIndexImageTmp = new byte[1920 * 1080];            
+                int index = 0;
+                while (pos < length)
+                {
+                    HR_bodyIndexData_read[index] =  b.ReadByte();
+                    if (index % 2 == 0)
+                    {
+                        //depthImageTmp[index / 2] = (byte)HR_depthData_read[index];
+                        bodyIndexImageTmp[index / 2] =  HR_bodyIndexData_read[index] < 6 ? (byte)100 : (byte)255;
+                    }
+
+                    index++;
+                    pos += sizeof(byte);
+                }
+
+                HRbodyIndexImage = new Image<Gray, Byte>(1920, 1080);
+                HRbodyIndexImage.Bytes = bodyIndexImageTmp;
+                HRbodyIndexImage_viewer = BitmapSourceConvert.ToBitmapSource(HRbodyIndexImage);
+            }
+        }
+
+        private void SaveHRBodyIndexData()
+        {
+            for (int index = 0; index < frameCount; index++)
+            {
+                LoadBodyIndexData(index);
+                LoadMappMatrix(index);
+                BodyIndexToHighResolution();
+
+                string path = filepath + "HR_BodyIndex\\FileHRbodyIndex_" + index.ToString() + ".bin";
+
+                FileStream fs = new FileStream(path, FileMode.Create);
+                using (BinaryWriter bw = new BinaryWriter(fs, System.Text.Encoding.Default))
+                {
+                    foreach (byte value in HR_bodyIndexData_bin)
+                    {
+                        bw.Write(value);
+                    }
+                }
+
+                Console.Text = index.ToString() + ".bin complete\n";
+            }
+
+            Console.Text = "HRBodyIndexData Save complete";
+        }
         private void SaveHRDepthData()
         {
             for (int index = 0; index < frameCount; index++)
@@ -590,12 +757,16 @@ namespace DataReader
             LoadMappMatrix(current_frame);
             LoadBodyData(current_frame);
             LoadBodyIndexData(current_frame);
+            LoadHRBodyIndexImage(current_frame);
 
             if (isShowColorImage)    ShowColorImage();
             if (isShowInfraredImage)   ShowInfraredImage();
+
             if (isShowDepthImage)   ShowDepthImage();
             //if (isShowDepthImage) ShowBodyIndexImage();
-            if (isShowDepthInColorImage) ShowHRDepthImage();
+
+           // if (isShowDepthInColorImage) ShowHRDepthImage();
+            if (isShowDepthInColorImage) ShowHRBodyIndexImage();
             if (isShowBodyOnDepthImage) ShowBodyOnDepthImage();
             if (isShowColorInDepthImage)   ShowColorInDepthImage();
             //ShowBodyOnDepthImage(img_number);
@@ -627,6 +798,10 @@ namespace DataReader
         private void HRDetphToBinInput_Click(object sender, RoutedEventArgs e)
         {
             SaveHRDepthData();
+        }
+        private void HRBodyIndexToBinInput_Click(object sender, RoutedEventArgs e)
+        {
+            SaveHRBodyIndexData();
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {

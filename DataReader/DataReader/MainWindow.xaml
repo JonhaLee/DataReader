@@ -35,13 +35,14 @@
                 <Image x:Name="ColorinDepthImageViewer" Height="212" Width="256"/>
             </Border>
         </WrapPanel>
-        <WrapPanel Height="150" Width="400" Orientation="Horizontal" Margin="567,517,25,2">
+        <WrapPanel Height="150" Width="500" Orientation="Horizontal" Margin="482,517,10,2">
             <TextBlock Text="Frames : " />
             <TextBox x:Name="FrameInputField" Height="20" Width="50"/>            
             <Button x:Name="ImageLoad" Height="20" Width="80" Click="Button_Click" Content="ImagesLoad" />
             <Button x:Name="CSVToBinBtn" Height="20" Width="80"  Click="CSVToBinInput_Click" Content="CsvToBinary" />
             <Button x:Name="HRDepthToBinBtn" Height="20" Width="100"  Click="HRDetphToBinInput_Click" Content="HRDepthToBinary" />
-            <WrapPanel Width="400">
+            <Button x:Name="HRBodyIndexToBinBtn" Height="20" Width="130"  Click="HRBodyIndexToBinInput_Click" Content="HRBodyIndexToBinary" />
+            <WrapPanel Width="500">
                 <TextBlock Width="100" Text="ViewerSetting : " />
             </WrapPanel>
             <CheckBox Name="Check_ColorImageShow" Content="Color" Checked="CheckBox_Checked" IsChecked="True" Unchecked="CheckBox_Unchecked" />
