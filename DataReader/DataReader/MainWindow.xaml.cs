@@ -36,7 +36,7 @@ namespace DataReader
     /// </summary>
     public partial class MainWindow : Window
     {
-        String filepath = "C:\\Users\\Jonha\\Desktop\\Data\\";
+        String filepath = "C:\\Users\\Jonha\\Desktop\\Data4\\";
         //String filepath = "C:\\Saved_Data\\Data\\";
 
         uint frameCount = 100;
@@ -66,7 +66,11 @@ namespace DataReader
         //body data, 
         List<bodyInfo_Structure> bodyData;
         //Body on Depth Image
-        ImageSource bodyOnDepthImage_viewer;
+        ImageSource bodyOnDepthImage_viewer;           
+        //BodyIndex data
+        byte[] bodyIndexData;        
+        Image<Gray, Byte> bodyIndexImage;
+        ImageSource bodyIndexImage_viewer;  
         //mapp matrix
         byte[] mappData;
         //Depth in Color data, Image
@@ -81,294 +85,9 @@ namespace DataReader
         //Color in Depth image
         ImageSource colorInDepth_viewer;
 
-        
-            
-        public MainWindow()
-        {
-            InitializeComponent();
-            InitializeData();          
-        }
-        private void InitializeData()
-        {
-            FrameController.Maximum = frameCount - 1;
-
-            depthData = new short[512 * 424];
-            HR_depthData = new short[1920 * 1080];
-            HR_depthData_bin = new short[3840 * 1080];
-            HR_depthData_read = new short[3840 * 1080];
-            bodyData = new List<bodyInfo_Structure>();    
-            mappData = new byte[1024 * 424];            
-
-            isShowColorImage = Check_ColorImageShow.IsChecked.Value;
-            isShowInfraredImage = Check_InfraredImageShow.IsChecked.Value;
-            isShowDepthImage = Check_DepthImageShow.IsChecked.Value;
-            isShowDepthInColorImage = Check_DepthInColorImageShow.IsChecked.Value;
-            isShowBodyOnDepthImage = Check_BodyOnDepthImageShow.IsChecked.Value;
-            isShowColorInDepthImage = Check_ColorInDepthImageShow.IsChecked.Value;
-            
-        }
-        private void ShowColorImage()
-        {
-            if (colorImage_viewer != null)
-                ColorImageViewer.Source = colorImage_viewer;            
-            else
-                Console.Text += "Color Image is null\n";
-        }
-        private void ShowInfraredImage()
-        {
-            if (infraredImage_viewer != null)
-                InfraredImageViewer.Source = infraredImage_viewer;
-            else
-                Console.Text += "Infrared Image is null\n"; 
-        }
-        private void ShowDepthImage()
-        {
-            if (depthImage_viewer != null)
-                DepthImageViewer.Source = depthImage_viewer;
-            else
-                Console.Text += "depth Image is null\n";            
-        }
-        private void ShowDepthInColorImage()
-        {
-            //이미지 mapp 과정
-            //DepthToHighResolution();
-            //Mapp_DepthToColor();
 
 
-
-            if (HRdepthImage_viewer != null)
-                DepthInColorImageViewer.Source = HRdepthImage_viewer;
-            else
-                Console.Text += "depthInColor Image is null\n";  
-        }
-        private void ShowBodyOnDepthImage()
-        {
-            Mapp_BodyOnDepth();
-
-            if (bodyOnDepthImage_viewer != null)
-                BodyOnDepthImageViewer.Source = bodyOnDepthImage_viewer;
-            else
-                Console.Text += "Body on Depth Image is null\n";  
-        }
-        private void ShowColorInDepthImage()
-        {
-            //이미지 mapp 과정
-            Mapp_ColorToDepth();
-
-            if (colorInDepth_viewer != null)
-                ColorinDepthImageViewer.Source = colorInDepth_viewer;
-            else
-                Console.Text += "rgbInDepth Image is null\n";   
-        }
-      
-        private void DepthToHighResolution()
-        {
-            Array.Clear(HR_depthData, 0, HR_depthData.Length);
-      
-            int rowSize = sizeof(short) + sizeof(short);
-            int offset = 0;
-            for (int row = 0; row < 424; row++)
-            {
-                for (int col = 0; col < 512; col++)
-                {
-                    //Gray val = new Gray();
-                    //if (Gray.Equals(depthImage[row, col], val) == false)
-                    {
-                        int y = BitConverter.ToInt16(mappData, offset + 0);
-                        int x = BitConverter.ToInt16(mappData, offset + 2);
-
-                        if ((x > 0 && x < 1920) && (y > 0 && y < 1080))
-                        {
-                            HR_depthData[y * 1920 + x] = depthData[row * 512 + col];
-                            HR_depthData_bin[y * 3840 + (x * 2) + 1] = 1;
-                        }
-                    }
-                    offset += rowSize;
-                }
-            }
-
-            short[] tmp = new short[1920 * 1080];
-            tmp = HR_depthData;
-           // for (int i = 0; i < 3; i++)
-            {
-                Console.Text = "zz";
-                const int masksize = 7;
-                short[] arr = new short[masksize * masksize];
-
-                for (int row = 0; row < 1080; row++)
-                {
-                    for (int col = 0; col < 1920; col++)
-                    {
-                        if (tmp[row * 1920 + col] == 0)
-                        {
-                            Array.Clear(arr, 0, arr.Length);
-
-                            int index = 0;
-                            for (int off_y = -masksize / 2; off_y < masksize / 2; off_y++)
-                            {
-                                for (int off_x = -masksize / 2; off_x < masksize / 2; off_x++)
-                                {
-                                    if ((off_y + row >= 0 && off_y + row < 1080) && (off_x + col >= 0 && off_x + col < 1920))
-                                    {
-                                        //if (HR_depthData[(row + off_y) * 1920 + col + off_x] != 0)
-                                        arr[index] = tmp[(row + off_y) * 1920 + col + off_x];
-                                    }
-                                    index++;
-                                }
-                            }
-
-                            HR_depthData[row * 1920 + col] = G_mask(arr, masksize);
-                        }
-                    }
-                }
-            }
-            /*
-            bool isStartPoint = false;
-            bool isEndPoint = false;
-            int iStartPoint = 0;
-            int iEndPoint = 0;
-            int repeat = 5;
-            int th = 10;
-
-
-            for (int count = 0; count < repeat; count++)
-            {
-                for (int row = 0; row < 1080; row++)
-                {
-                    for (int col = 0; col < 1920; col++)
-                    {
-                        if (HR_depthData[row * 1920 + col] > 0)
-                        {
-                            if (isStartPoint == false)
-                            {
-                                isStartPoint = true;
-                                iStartPoint = row * 1920 + col;
-
-                                for (int i = row * 1920 + col + 1; i < row * 1920 + 1920; i++)
-                                {
-                                    if (HR_depthData[i] > 0)
-                                    {                                        
-                                        isEndPoint = true;
-                                        iEndPoint = i;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (isStartPoint == true && isEndPoint == true)
-                            {
-                                if (iEndPoint - iStartPoint < th)
-                                {
-                                    int index = row * 1920 + col;
-
-                                    float total = iEndPoint - iStartPoint;
-
-                                    float result = ((float)(iEndPoint - index) / total) * HR_depthData[iStartPoint] + ((float)(index - iStartPoint) / total) * HR_depthData[iEndPoint];
-                                    HR_depthData[index] = (short)result;
-                                }
-                            }
-                        }
-
-                        if (iEndPoint == row * 1920 + col)
-                        {
-                            isStartPoint = false;
-                            isEndPoint = false;
-                            iStartPoint = 0;
-                            iEndPoint = 0;
-                        }
-                    }
-                    isStartPoint = false;
-                    isEndPoint = false;
-                    iStartPoint = 0;
-                    iEndPoint = 0;
-                }
-
-
-                for (int col = 0; col < 1920; col++)
-                {
-                    for (int row = 0; row < 1080; row++)
-                    {
-                        if (HR_depthData[row * 1920 + col] > 0)
-                        {
-                            if (isStartPoint == false)
-                            {
-                                isStartPoint = true;
-                                iStartPoint = row * 1920 + col;
-
-                                for (int i = (row + 1) * 1920 + col; i < 1079 * 1920 + col; i += 1920)
-                                {
-                                    if (HR_depthData[i] > 0)
-                                    {                                        
-                                        isEndPoint = true;
-                                        iEndPoint = i;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (isStartPoint == true && isEndPoint == true)
-                            {
-                                if ((iEndPoint - iStartPoint) / 1920 < th)
-                                {
-                                    int index = row * 1920 + col;
-
-                                    float total = (iEndPoint - iStartPoint) / 1920;
-
-                                    float result = ((float)((iEndPoint - index) / 1920) / total) * HR_depthData[iStartPoint] + ((float)((index - iStartPoint) / 1920) / total) * HR_depthData[iEndPoint];
-                                    HR_depthData[index] = (short)result;
-                                }
-                            }
-                        }
-
-                        if (iEndPoint == row * 1920 + col)
-                        {
-                            isStartPoint = false;
-                            isEndPoint = false;
-                            iStartPoint = 0;
-                            iEndPoint = 0;
-                        }
-                    }
-                    isStartPoint = false;
-                    isEndPoint = false;
-                    iStartPoint = 0;
-                    iEndPoint = 0;
-                }
-            }
-            */
-
-            for (int row = 0; row < 1080; row++)
-            {
-                for (int col = 0; col < 1920; col++)
-                {
-                    HR_depthData_bin[row * 3840 + (col * 2)] = HR_depthData[row * 1920 + col];
-                }
-            }
-        }
-
-        private short mask(short[] arr, int masksize)
-        {
-            int sum = 0;
-            int cnt = 0;
-            for (int y = 0; y < masksize; y++)
-            {
-                for (int x = 0; x < masksize; x++)
-                {
-                    if (arr[y * masksize + x] != 0)
-                    {
-                        sum += arr[y * masksize + x];
-                        cnt++;
-                    }
-                }
-            }
-
-            if(cnt != 0)
-                sum /= cnt;
-            return (short)sum;
-        }
+        #region gaussian array
         double[] g = {0, 0.000001, 0.000014, 0.000055, 0.000088, 0.000055, 0.000014, 0.000001, 0, 
                         0.000001, 0.000036, 0.000362, 0.001445, 0.002289, 0.001445, 0.000362, 0.000036, 0.000001, 
                         0.000014, 0.000362, 0.003672, 0.014648, 0.023205, 0.014648, 0.003672, 0.000362, 0.000014, 
@@ -410,19 +129,173 @@ namespace DataReader
                       2, 4, 7, 8, 7, 4, 2,
                       1, 3, 4, 5, 4, 3, 1,
                       1, 1, 2, 2, 2, 1, 1};
+        #endregion
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            InitializeData();          
+        }
+        private void InitializeData()
+        {
+            FrameController.Maximum = frameCount - 1;
+
+            depthData = new short[512 * 424];
+            HR_depthData = new short[1920 * 1080];
+            HR_depthData_bin = new short[3840 * 1080];
+            HR_depthData_read = new short[3840 * 1080];
+            bodyData = new List<bodyInfo_Structure>();
+            bodyIndexData = new byte[512 * 424];
+            mappData = new byte[1024 * 424];            
+
+            isShowColorImage = Check_ColorImageShow.IsChecked.Value;
+            isShowInfraredImage = Check_InfraredImageShow.IsChecked.Value;
+            isShowDepthImage = Check_DepthImageShow.IsChecked.Value;
+            isShowDepthInColorImage = Check_DepthInColorImageShow.IsChecked.Value;
+            isShowBodyOnDepthImage = Check_BodyOnDepthImageShow.IsChecked.Value;
+            isShowColorInDepthImage = Check_ColorInDepthImageShow.IsChecked.Value;
+            
+        }
+        private void ShowColorImage()
+        {
+            if (colorImage_viewer != null)
+                ColorImageViewer.Source = colorImage_viewer;            
+            else
+                Console.Text += "Color Image is null\n";
+        }
+        private void ShowInfraredImage()
+        {
+            if (infraredImage_viewer != null)
+                InfraredImageViewer.Source = infraredImage_viewer;
+            else
+                Console.Text += "Infrared Image is null\n"; 
+        }
+        private void ShowDepthImage()
+        {
+            if (depthImage_viewer != null)
+                DepthImageViewer.Source = depthImage_viewer;
+            else
+                Console.Text += "depth Image is null\n";            
+        }
+        private void ShowHRDepthImage()
+        {
+            //이미지 mapp 과정
+            //DepthToHighResolution();
+            //Mapp_DepthToColor();
+
+            if (HRdepthImage_viewer != null)
+                DepthInColorImageViewer.Source = HRdepthImage_viewer;
+            else
+                Console.Text += "HRDepth Image is null\n";  
+        }
+        private void ShowBodyOnDepthImage()
+        {
+            Mapp_BodyOnDepth();
+
+            if (bodyOnDepthImage_viewer != null)
+                BodyOnDepthImageViewer.Source = bodyOnDepthImage_viewer;
+            else
+                Console.Text += "Body on Depth Image is null\n";  
+        }
+        private void ShowColorInDepthImage()
+        {
+            //이미지 mapp 과정
+            Mapp_ColorToDepth();
+
+            if (colorInDepth_viewer != null)
+                ColorinDepthImageViewer.Source = colorInDepth_viewer;
+            else
+                Console.Text += "rgbInDepth Image is null\n";   
+        }
+        private void ShowBodyIndexImage()
+        {
+            if (bodyIndexImage_viewer != null)
+                DepthImageViewer.Source = bodyIndexImage_viewer;
+            else
+                Console.Text += "BodyIndex Image is null\n";
+        }
+      
+        private void DepthToHighResolution()
+        {
+            Array.Clear(HR_depthData, 0, HR_depthData.Length);
+      
+            int rowSize = sizeof(short) + sizeof(short);
+            int offset = 0;
+            for (int row = 0; row < 424; row++)
+            {
+                for (int col = 0; col < 512; col++)
+                {
+                    //Gray val = new Gray();
+                    //if (Gray.Equals(depthImage[row, col], val) == false)
+                    {
+                        int y = BitConverter.ToInt16(mappData, offset + 0);
+                        int x = BitConverter.ToInt16(mappData, offset + 2);
+
+                        if ((x > 0 && x < 1920) && (y > 0 && y < 1080))
+                        {
+                            HR_depthData[y * 1920 + x] = depthData[row * 512 + col];
+                            HR_depthData_bin[y * 3840 + (x * 2) + 1] = 1;
+                        }
+                    }
+                    offset += rowSize;
+                }
+            }
+
+            short[] tmp = new short[1920 * 1080];
+            tmp = HR_depthData;
+           // for (int i = 0; i < 3; i++)
+            {     
+                const int masksize = 7;
+                short[] arr = new short[masksize * masksize];
+
+                for (int row = 0; row < 1080; row++)
+                {
+                    for (int col = 0; col < 1920; col++)
+                    {
+                        if (tmp[row * 1920 + col] == 0)
+                        {
+                            Array.Clear(arr, 0, arr.Length);
+
+                            int index = 0;
+                            for (int off_y = -masksize / 2; off_y < masksize / 2; off_y++)
+                            {
+                                for (int off_x = -masksize / 2; off_x < masksize / 2; off_x++)
+                                {
+                                    if ((off_y + row >= 0 && off_y + row < 1080) && (off_x + col >= 0 && off_x + col < 1920))
+                                    {
+                                        //if (HR_depthData[(row + off_y) * 1920 + col + off_x] != 0)
+                                        arr[index] = tmp[(row + off_y) * 1920 + col + off_x];
+                                    }
+                                    index++;
+                                }
+                            }
+
+                            HR_depthData[row * 1920 + col] = G_mask(arr, masksize);
+                        }
+                    }
+                }
+            }
+
+            for (int row = 0; row < 1080; row++)
+            {
+                for (int col = 0; col < 1920; col++)
+                {
+                    HR_depthData_bin[row * 3840 + (col * 2)] = HR_depthData[row * 1920 + col];
+                }
+            }
+        }
+
         private short G_mask(short[] arr, int masksize)
         {
             double total =  0;
             double sum = 0;
-            int cnt = 0;
+   
             for (int y = 0; y < masksize; y++)
             {
                 for (int x = 0; x < masksize; x++)
                 {
                     if (arr[y * masksize + x] != 0)
-                        total += g3[y * masksize + x];
-                        //sum += (arr[y * masksize + x] * g2[y * masksize + x]) ;
-                    //cnt++;                    
+                        total += g3[y * masksize + x];                                        
                 }
             }
 
@@ -432,12 +305,10 @@ namespace DataReader
                 {
                     if (arr[y * masksize + x] != 0)
                         sum += 1.0 / total * (arr[y * masksize + x] * g3[y * masksize + x]) ;
-                    //cnt++;                    
+                                     
                 }
             }
-
-            //if (cnt != 0)
-                //sum /= cnt;
+    
             return (short)sum;
         }
 
@@ -577,7 +448,7 @@ namespace DataReader
         }
         private void LoadHRDepthImage(int img_number)
         {
-            string path = filepath + "HR_Depth\\FileHRdepth_" + 0.ToString() + ".bin";
+            string path = filepath + "HR_Depth\\FileHRdepth_" + img_number.ToString() + ".bin";
             using (BinaryReader b = new BinaryReader(File.Open(path, FileMode.Open)))
             {
                 int pos = 0;
@@ -655,10 +526,37 @@ namespace DataReader
             else
                 Console.Text += "BodyData Can't loaded\n";
         }
+        private void LoadBodyIndexData(int img_number)
+        {
+            string path = filepath + "BodyIndex\\FilebodyIndex_" + img_number.ToString() + ".bin";
+
+            using (BinaryReader b = new BinaryReader(File.Open(path, FileMode.Open)))
+            {
+                int pos = 0;
+                int length = (int)b.BaseStream.Length;
+
+                byte[] bodyIndexImageTmp = new byte[512 * 424];         
+                int index = 0;
+                while (pos < length)
+                {
+                    bodyIndexData[index] = b.ReadByte();
+                    bodyIndexImageTmp[index] = bodyIndexData[index] < 6 ? (byte)0 : (byte)255;
+
+                    index++;
+                    pos += sizeof(byte);
+                }
+
+                bodyIndexImage = new Image<Gray, Byte>(512, 424);
+                bodyIndexImage.Bytes = bodyIndexImageTmp;
+                bodyIndexImage_viewer = BitmapSourceConvert.ToBitmapSource(bodyIndexImage);
+            }
+
+            Console.Text = bodyIndexData[0].ToString();
+        }
 
         private void SaveHRDepthData()
         {
-            for (int index = 0; index < 1; index++)
+            for (int index = 0; index < frameCount; index++)
             {
                 LoadDepthImage(index);
                 LoadMappMatrix(index);
@@ -691,11 +589,13 @@ namespace DataReader
             LoadHRDepthImage(current_frame);
             LoadMappMatrix(current_frame);
             LoadBodyData(current_frame);
+            LoadBodyIndexData(current_frame);
 
             if (isShowColorImage)    ShowColorImage();
             if (isShowInfraredImage)   ShowInfraredImage();
             if (isShowDepthImage)   ShowDepthImage();
-            if (isShowDepthInColorImage) ShowDepthInColorImage();
+            //if (isShowDepthImage) ShowBodyIndexImage();
+            if (isShowDepthInColorImage) ShowHRDepthImage();
             if (isShowBodyOnDepthImage) ShowBodyOnDepthImage();
             if (isShowColorInDepthImage)   ShowColorInDepthImage();
             //ShowBodyOnDepthImage(img_number);
