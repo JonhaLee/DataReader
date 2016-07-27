@@ -236,9 +236,16 @@ namespace DataReader
         }
         private void BodyIndexToHighResolution()
         {
-            Array.Clear(HR_bodyIndexData, 0, HR_bodyIndexData.Length);
+            //Array.Clear(HR_bodyIndexData, 0, HR_bodyIndexData.Length);
+            for (int row = 0; row < 1080; row++)
+            {
+                for (int col = 0; col < 1920; col++)
+                {
+                    HR_bodyIndexData[row * 1920 + col] = 255;
+                }
+            }
 
-            int rowSize = sizeof(byte) + sizeof(byte);
+            int rowSize = sizeof(short) + sizeof(short);
             int offset = 0;
             for (int row = 0; row < 424; row++)
             {
@@ -253,55 +260,138 @@ namespace DataReader
                         if ((x > 0 && x < 1920) && (y > 0 && y < 1080))
                         {
                             HR_bodyIndexData[y * 1920 + x] = bodyIndexData[row * 512 + col];
-                            HR_bodyIndexData_bin[y * 3840 + (x * 2) + 1] = 1;
+                            HR_bodyIndexData_bin[y * 3840 + (x * 2) + 1] = 255;
                         }
                     }
                     offset += rowSize;
                 }
             }
 
-            byte[] tmp = new byte[1920 * 1080];
-            tmp = HR_bodyIndexData;
-            // for (int i = 0; i < 3; i++)
-            {
-                const int masksize = 7;
-                byte[] arr = new byte[masksize * masksize];
+            int startIndex = -1;
+            int endIndex = -1;
+
+            for(int count = 0; count < 5; count++){
 
                 for (int row = 0; row < 1080; row++)
                 {
                     for (int col = 0; col < 1920; col++)
                     {
-                        if (tmp[row * 1920 + col] == 0)
+                        if (HR_bodyIndexData[row * 1920 + col] < 6)
                         {
-                            Array.Clear(arr, 0, arr.Length);
+                            if (startIndex == -1) startIndex = col;
+                            else if (startIndex != -1 && endIndex == -1) endIndex = col;
+                        }
 
-                            int index = 0;
-                            for (int off_y = -masksize / 2; off_y < masksize / 2; off_y++)
+                        if (startIndex != -1 && endIndex != -1)
+                        {
+                            if (endIndex - startIndex > 10)
                             {
-                                for (int off_x = -masksize / 2; off_x < masksize / 2; off_x++)
+                                startIndex = endIndex;
+                                endIndex = -1;
+                            }
+                            else
+                            {
+                                if (HR_bodyIndexData[row * 1920 + startIndex] == HR_bodyIndexData[row * 1920 + endIndex])
                                 {
-                                    if ((off_y + row >= 0 && off_y + row < 1080) && (off_x + col >= 0 && off_x + col < 1920))
+                                    for (int i = startIndex + 1; i < endIndex; i++)
                                     {
-                                        //if (HR_depthData[(row + off_y) * 1920 + col + off_x] != 0)
-                                        arr[index] = tmp[(row + off_y) * 1920 + col + off_x];
+                                        HR_bodyIndexData[row * 1920 + i] = HR_bodyIndexData[row * 1920 + startIndex];
                                     }
-                                    index++;
                                 }
+                                startIndex = -1;
+                                endIndex = -1;
+                            }
+                       
+                        }
+                    }
+                    startIndex = -1;
+                    endIndex = -1;
+                }
+
+
+                for (int col = 0; col < 1920; col++)
+                {
+                    for (int row = 0; row < 1080; row++)
+                    {
+                        if (HR_bodyIndexData[row * 1920 + col] < 6)
+                        {
+                            if (startIndex == -1) startIndex = row;
+                            else if (startIndex != -1 && endIndex == -1) endIndex = row;
+                        }
+
+                        if (startIndex != -1 && endIndex != -1)
+                        {
+                            if (endIndex - startIndex > 10)
+                            {
+                                startIndex = endIndex;
+                                endIndex = -1;
+                            }
+                            else
+                            {
+                                if (HR_bodyIndexData[startIndex * 1920 + col] == HR_bodyIndexData[endIndex * 1920 + col])
+                                {
+                                    for (int i = startIndex + 1; i < endIndex; i++)
+                                    {
+                                        HR_bodyIndexData[i * 1920 + col] = HR_bodyIndexData[startIndex * 1920 + col];
+                                    }
+                                }
+                                startIndex = -1;
+                                endIndex = -1;
                             }
 
-                            HR_bodyIndexData[row * 1920 + col] = BodyIndex_mask(arr, masksize);
+                        }
+                    }
+                    startIndex = -1;
+                    endIndex = -1;
+                }
+            }
+
+                
+                byte[] tmp = new byte[1920 * 1080];
+                tmp = HR_bodyIndexData;
+                // for (int i = 0; i < 3; i++)
+                {
+                    const int masksize = 5;
+                    byte[] arr = new byte[masksize * masksize];
+
+                    for (int row = 0; row < 1080; row++)
+                    {
+                        for (int col = 0; col < 1920; col++)
+                        {
+                            if (tmp[row * 1920 + col] == 255)
+                            {
+                                Array.Clear(arr, 0, arr.Length);
+
+                                int index = 0;
+                                for (int off_y = -masksize / 2; off_y < masksize / 2; off_y++)
+                                {
+                                    for (int off_x = -masksize / 2; off_x < masksize / 2; off_x++)
+                                    {
+                                        if ((off_y + row >= 0 && off_y + row < 1080) && (off_x + col >= 0 && off_x + col < 1920))
+                                        {
+                                            //if (HR_depthData[(row + off_y) * 1920 + col + off_x] != 0)
+                                            arr[index] = tmp[(row + off_y) * 1920 + col + off_x];
+                                            arr[index]++;
+                                        }
+                                        index++;
+                                    }
+                                }
+                                HR_bodyIndexData[row * 1920 + col] = BodyIndex_mask(arr, masksize);                         
+                            }
                         }
                     }
                 }
-            }
+                
 
-            for (int row = 0; row < 1080; row++)
-            {
-                for (int col = 0; col < 1920; col++)
+
+                for (int row = 0; row < 1080; row++)
                 {
-                    HR_bodyIndexData_bin[row * 3840 + (col * 2)] = HR_bodyIndexData[row * 1920 + col];
+                    for (int col = 0; col < 1920; col++)
+                    {
+                        HR_bodyIndexData_bin[row * 3840 + (col * 2)] = HR_bodyIndexData[row * 1920 + col];
+                        //HR_bodyIndexData_bin[row * 3840 + (col * 2)] = 1;
+                    }
                 }
-            }
         }
       
         private void DepthToHighResolution()
@@ -376,29 +466,52 @@ namespace DataReader
 
         private byte BodyIndex_mask(byte[] arr, int masksize)
         {
-            double total = 0;
-            double sum = 0;
+            
+            int[] count = new int[6];
+            Array.Clear(count, 0, count.Length);
 
             for (int y = 0; y < masksize; y++)
             {
                 for (int x = 0; x < masksize; x++)
                 {
-                    if (arr[y * masksize + x] != 255)
-                        total += g3[y * masksize + x];
+                    if (arr[y * masksize + x] < 7 && arr[y * masksize + x] > 0)
+                        count[arr[y * masksize + x]-1]++;
                 }
             }
 
+            int tmp = 0;
+            int index = -1;
+            for (int i = 0; i < 6; i++ )
+            {
+                if (tmp <= count[i])
+                {
+                    tmp = count[i];
+                    index = i;
+                }
+            }
+
+            if (index == -1) return 255;
+            else
+            {
+                if (count[index] > 12) return (byte)index;
+                else return 255;
+            }
+
+            
+
+            /*
             for (int y = 0; y < masksize; y++)
             {
                 for (int x = 0; x < masksize; x++)
                 {
-                    if (arr[y * masksize + x] != 0)
+                    if (arr[y * masksize + x] < 6)
                         sum += 1.0 / total * (arr[y * masksize + x] * g3[y * masksize + x]);
 
                 }
             }
+            */
 
-            return (byte)sum;
+            //return (byte)sum;
         }
         private short G_mask(short[] arr, int masksize)
         {
@@ -644,7 +757,6 @@ namespace DataReader
         private void LoadBodyIndexData(int img_number)
         {
             string path = filepath + "BodyIndex\\FilebodyIndex_" + img_number.ToString() + ".bin";
-
             using (BinaryReader b = new BinaryReader(File.Open(path, FileMode.Open)))
             {
                 int pos = 0;
@@ -671,6 +783,7 @@ namespace DataReader
         private void LoadHRBodyIndexImage(int img_number)
         {
             string path = filepath + "HR_BodyIndex\\FileHRbodyIndex_" + img_number.ToString() + ".bin";
+            //string path = filepath + "BodyIndex\\FilebodyIndex_" + img_number.ToString() + ".bin";
             using (BinaryReader b = new BinaryReader(File.Open(path, FileMode.Open)))
             {
                 int pos = 0;
@@ -679,14 +792,16 @@ namespace DataReader
                 byte[] bodyIndexImageTmp = new byte[1920 * 1080];            
                 int index = 0;
                 while (pos < length)
-                {
+                {                    
                     HR_bodyIndexData_read[index] =  b.ReadByte();
+                    //bodyIndexImageTmp[index] = HR_bodyIndexData_read[index] < 6 ? (byte)100 : (byte)255;
+                    
                     if (index % 2 == 0)
                     {
                         //depthImageTmp[index / 2] = (byte)HR_depthData_read[index];
                         bodyIndexImageTmp[index / 2] =  HR_bodyIndexData_read[index] < 6 ? (byte)100 : (byte)255;
                     }
-
+                    
                     index++;
                     pos += sizeof(byte);
                 }
@@ -698,7 +813,7 @@ namespace DataReader
         }
 
         private void SaveHRBodyIndexData()
-        {
+        {         
             for (int index = 0; index < frameCount; index++)
             {
                 LoadBodyIndexData(index);
@@ -706,13 +821,14 @@ namespace DataReader
                 BodyIndexToHighResolution();
 
                 string path = filepath + "HR_BodyIndex\\FileHRbodyIndex_" + index.ToString() + ".bin";
-
+               
                 FileStream fs = new FileStream(path, FileMode.Create);
                 using (BinaryWriter bw = new BinaryWriter(fs, System.Text.Encoding.Default))
                 {
+                    //foreach (byte value in HR_bodyIndexData_bin)                    
                     foreach (byte value in HR_bodyIndexData_bin)
                     {
-                        bw.Write(value);
+                        bw.Write(value);                        
                     }
                 }
 
@@ -720,6 +836,7 @@ namespace DataReader
             }
 
             Console.Text = "HRBodyIndexData Save complete";
+          
         }
         private void SaveHRDepthData()
         {
@@ -762,8 +879,8 @@ namespace DataReader
             if (isShowColorImage)    ShowColorImage();
             if (isShowInfraredImage)   ShowInfraredImage();
 
-            if (isShowDepthImage)   ShowDepthImage();
-            //if (isShowDepthImage) ShowBodyIndexImage();
+            //if (isShowDepthImage)   ShowDepthImage();
+            if (isShowDepthImage) ShowBodyIndexImage();
 
            // if (isShowDepthInColorImage) ShowHRDepthImage();
             if (isShowDepthInColorImage) ShowHRBodyIndexImage();
